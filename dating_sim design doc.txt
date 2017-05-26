@@ -1,0 +1,51 @@
+
+
+based on utility
+
+each agent could start with its own average expected utility
+expected utility is updated when one agent meets another
+
+if utility gain from another met agent is higher than average expected utility,
+agent will signal "date"
+if both agents signal "date", they will date
+
+could put in parameters for attractiveness
+could make 50% male 50% female
+or add in continuum of sexuality
+maybe add in a "10 point scale" for attractiveness
+
+august: evolutionary indices for fertility and attraction
+google scholar for that kind of thing
+an easy way to think of parameters
+
+mike:
+an array of people with qualities
+give people a radius and center for a person
+would determine how often they would meet other people
+
+give agents an option to stop dating, or to switch to another person
+
+maybe have some sort of stopping rule that would result in marriage
+
+august:
+base stopping rule on variance of expected utility
+
+----
+
+have a list of other agents and their expected utility to you
+
+
+add a variable for amount of time required to date to transition until they marry
+
+might see "settling" for someone of lower attractiveness if you see a lot of people of lower attractiveness
+it would lower your average expected utility
+
+
+
+
+
+
+
+
+
+
