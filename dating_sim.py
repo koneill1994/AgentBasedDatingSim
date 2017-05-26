@@ -80,10 +80,11 @@ class Agent:
     self.icon = self.GenerateIcon()
   
   def GenerateIcon(self):
+    icon_dim = (5,5)
     col=self.ColorFromAttractiveness()
-    im=Image.new( 'RGB', (1,1), col)
+    im=Image.new( 'RGB', icon_dim, col)
     PIL_bytes = im.tobytes("raw")
-    pygame_img = pygame.image.fromstring(PIL_bytes,(1,1),"RGB")
+    pygame_img = pygame.image.fromstring(PIL_bytes,icon_dim,"RGB")
     return pygame_img
     
   def ColorFromAttractiveness(self):
@@ -99,7 +100,7 @@ class Agent:
     if self.attractiveness < 5:
       b= int(max(1-self.attractiveness/5.0,0)*255)
     if self.attractiveness > 5:
-      r =  int(min(1-self.attractiveness/5.0,1)*255)
+      r =  -int(min(1-self.attractiveness/5.0,1)*255)
     g = int(255*(1-abs((self.attractiveness-5)/5.0)))
     return (r,g,b)
     
@@ -189,6 +190,7 @@ while(True): # i like to live dangerously
   for person in agents:
     person.Move()
     screen.blit(person.icon,person.location)
+    
     
   pygame.display.flip()
   sim_time+=1
