@@ -43,6 +43,12 @@ from pygame import gfxdraw
   # dating rule
   # marriage rule
 
+# for dating, we need some way to gradually reduce people's expected utility
+# otherwise they'll never date
+
+
+
+
 
 # simplified for first model
 gender_list=['m','f']
@@ -60,6 +66,8 @@ sd_expected_utility = 2
 
 
 class Agent:
+  
+  
   
   def __init__(self):
     self.GenerateRandomStats()
@@ -79,6 +87,7 @@ class Agent:
     self.interacted = []
     self.icon = self.GenerateIcon()
     self.interaction_list = []
+    self.significant_other = None
   
   def GenerateIcon(self):
     icon_dim = (5,5)
@@ -118,18 +127,28 @@ class Agent:
   def Interact(self,other):
     e_u = self.EstimatedUtility(other)
     self.interacted.append((other,e_u))
+    self.UpdateExpectedUtility(sim_time)
+
+  # if this is true for both, they will date
+  def CheckInterested(self,other):
+     if self.EstimatedUtility(other) > self.expected_utility:
+       return True
+  
+  def EnterRelationship(self,other):
+    self.significant_other = other
     
   def EstimatedUtility(self,other):
     return other.attractiveness # more complex formula later
   
-  def UpdateExpectedUtility(self):
+  def UpdateExpectedUtility(self,t):
     total_utility=0
     for person in self.interacted:
-      total_utility+=person[0]
+      total_utility+=person[1]
     self.expected_utility = total_utility/len(self.interacted) #average of all seen utilities
+    self.expected_utility *= 1-(t+1)**-2
     
   def CheckForIntersectingCircles(self,agent_list):
-    for agent in agent_list():
+    for agent in agent_list:
       if SqrDistance(self.location,agent.location) < (self.radius + agent.radius)**2:
         self.interaction_list.append(agent)
   
@@ -150,7 +169,44 @@ def SqrDistance((x,y),(a,b)):
   return (x-a)**2 + (y-b)**2
   
   
+def RemoveFromCouples(agent):
+  couples_copy = couples
+  for c in couples_copy:
+    if agent in c:
+      couples.pop(c)
   
+def CheckIfDate(agent_a,agent_b):
+  if agent_a.CheckInterested(agent_b) and agent_b.CheckInterested(agent_a):
+    agent_a.EnterRelationship(agent_b)
+    agent_b.EnterRelationship(agent_a)
+    couples.append((agent_a,agent_b))
+    #technically just removing one should be sufficient, but redundancy is safer
+    RemoveFromCouples(agent_a)
+    RemoveFromCouples(agent_b)
+  
+def GeneratePossibleInteractions(agents):
+  for a in agents:
+    a.CheckForIntersectingCircles(agents)
+  
+def AverageExpectedUtility(agents):
+  total=0
+  for a in agents:
+    total+=a.expected_utility
+  return 1.0*total/len(agents)
+  
+def AverageSocialCircle(agents):
+  total=0
+  for a in agents:
+    total+=len(a.interacted)
+  return 1.0*total/len(agents)
+
+def AverageInteractionRadius(agents):
+  total=0
+  for a in agents:
+    total+=a.interaction_radius
+  return 1.0*total/len(agents)
+
+
 
 ## start of main code here
 
@@ -158,9 +214,12 @@ no_of_agents = 500
 
 agents=[]
 
+couples=[]
 
 for n in range(no_of_agents):
   agents.append(Agent())
+
+GeneratePossibleInteractions(agents)
 
 sim_time = 0
 
@@ -186,12 +245,16 @@ yellow = 255,255,0,255
 
 
 
-
 while(True): # i like to live dangerously
   
   screen.fill(white)
   
-  print sim_time
+  #print sim_time
+  #print "couples:" + str(len(couples))
+  print AverageExpectedUtility(agents)
+  #print AverageInteractionRadius(agents)
+  #print agents[0].expected_utility
+  
   for person in agents:
     person.Move()
     person.interaction_done = False
@@ -204,6 +267,10 @@ while(True): # i like to live dangerously
       if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
         person.Interact(other)
         other.Interact(person)
+  
+  #draw the couples linkages
+  for c in couples:
+    pygame.draw.line(screen,black,c[0].location,c[1].location,1)
     
   pygame.display.flip()
   sim_time+=1
