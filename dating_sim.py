@@ -59,6 +59,10 @@ mean_expected_utility = 5
 sd_expected_utility = 2
 
 
+render_pygame_window=True
+
+
+
 class Agent:
   
   
@@ -168,14 +172,6 @@ def AdjacentPoints((x,y)):
 def SqrDistance((x,y),(a,b)):
   return (x-a)**2 + (y-b)**2
   
-  
-# assuming monogamous relationships, there should be no more than 250 couples
-# i'm getting around 350 at the moment
-# i think there's some that get into polyamourous relationships
-# and probably a bunch more that just register every frame as a new couple
-
-
-
 
 def RemoveFromCouples(agent_a,agent_b):
   for c in range(len(couples)):
@@ -186,7 +182,7 @@ def RemoveFromCouples(agent_a,agent_b):
 def CheckIfDate(agent_a,agent_b):
   if agent_a.CheckInterested(agent_b) and agent_b.CheckInterested(agent_a):
     # free the agents from their previous romantic obligations
-    #RemoveFromCouples(agent_a,agent_b)
+    RemoveFromCouples(agent_a,agent_b)
     
     agent_a.EnterRelationship(agent_b)
     agent_b.EnterRelationship(agent_a)
@@ -233,16 +229,16 @@ sim_time = 0
 
 # pygame initialization
 
+if(render_pygame_window):
+  pygame.init()
+  screen = pygame.display.set_mode(field_dim)
 
-pygame.init()
-screen = pygame.display.set_mode(field_dim)
-
-black = 0,0,0,255
-white = 255,255,255,255
-red = 255,0,0,255
-blue = 0,0,255,255
-green = 0,255,0,255
-yellow = 255,255,0,255
+  black = 0,0,0,255
+  white = 255,255,255,255
+  red = 255,0,0,255
+  blue = 0,0,255,255
+  green = 0,255,0,255
+  yellow = 255,255,0,255
 
 
 
@@ -255,8 +251,6 @@ yellow = 255,255,0,255
 
 while(True): # i like to live dangerously
   
-  screen.fill(white)
-  
   print
   print sim_time
   print "couples:" + str(len(couples))
@@ -264,10 +258,13 @@ while(True): # i like to live dangerously
   #print AverageInteractionRadius(agents)
   #print agents[0].expected_utility
   
+  if(render_pygame_window):
+    screen.fill(white)
+  
   for person in agents:
     person.Move()
-    person.interaction_done = False
-    screen.blit(person.icon,person.location)
+    if(render_pygame_window):
+      screen.blit(person.icon,person.location)
     
     
   # check and see which agents are close enough to meet
@@ -276,12 +273,12 @@ while(True): # i like to live dangerously
       if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
         person.Interact(other)
         other.Interact(person)
-        if not person.taken and not other.taken:
-          CheckIfDate(person,other)
-  
-  #draw the couples linkages
-  for c in couples:
-    pygame.draw.line(screen,black,c[0].location,c[1].location,1)
+        CheckIfDate(person,other)
+        
+  if(render_pygame_window):
+    #draw the couples linkages
+    for c in couples:
+      pygame.draw.line(screen,black,c[0].location,c[1].location,1)
+    pygame.display.flip()
     
-  pygame.display.flip()
   sim_time+=1
