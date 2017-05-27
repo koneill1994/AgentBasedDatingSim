@@ -78,6 +78,7 @@ class Agent:
     self.expected_utility = max(random.gauss(mean_expected_utility,sd_expected_utility),0)
     self.interacted = []
     self.icon = self.GenerateIcon()
+    self.interaction_list = []
   
   def GenerateIcon(self):
     icon_dim = (5,5)
@@ -115,7 +116,7 @@ class Agent:
     self.location = points[random.randrange(0,len(points))]
     
   def Interact(self,other):
-    e_u = self.ExpectedUtility(other)
+    e_u = self.EstimatedUtility(other)
     self.interacted.append((other,e_u))
     
   def EstimatedUtility(self,other):
@@ -127,6 +128,10 @@ class Agent:
       total_utility+=person[0]
     self.expected_utility = total_utility/len(self.interacted) #average of all seen utilities
     
+  def CheckForIntersectingCircles(self,agent_list):
+    for agent in agent_list():
+      if SqrDistance(self.location,agent.location) < (self.radius + agent.radius)**2:
+        self.interaction_list.append(agent)
   
 
 def AdjacentPoints((x,y)):
@@ -189,8 +194,16 @@ while(True): # i like to live dangerously
   print sim_time
   for person in agents:
     person.Move()
+    person.interaction_done = False
     screen.blit(person.icon,person.location)
     
+    
+  # check and see which agents are close enough to meet
+  for person in agents:
+    for other in person.interaction_list:
+      if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
+        person.Interact(other)
+        other.Interact(person)
     
   pygame.display.flip()
   sim_time+=1
