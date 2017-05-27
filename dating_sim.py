@@ -43,12 +43,6 @@ from pygame import gfxdraw
   # dating rule
   # marriage rule
 
-# for dating, we need some way to gradually reduce people's expected utility
-# otherwise they'll never date
-
-
-
-
 
 # simplified for first model
 gender_list=['m','f']
@@ -88,6 +82,8 @@ class Agent:
     self.icon = self.GenerateIcon()
     self.interaction_list = []
     self.significant_other = None
+    self.taken = False
+    self.acquaintances=[]
   
   def GenerateIcon(self):
     icon_dim = (5,5)
@@ -125,9 +121,11 @@ class Agent:
     self.location = points[random.randrange(0,len(points))]
     
   def Interact(self,other):
-    e_u = self.EstimatedUtility(other)
-    self.interacted.append((other,e_u))
-    self.UpdateExpectedUtility(sim_time)
+    if other not in self.acquaintances:
+      e_u = self.EstimatedUtility(other)
+      self.interacted.append((other,e_u))
+      self.acquaintances.append(other)
+      self.UpdateExpectedUtility(sim_time)
 
   # if this is true for both, they will date
   def CheckInterested(self,other):
@@ -135,6 +133,7 @@ class Agent:
        return True
   
   def EnterRelationship(self,other):
+    self.taken = True
     self.significant_other = other
     
   def EstimatedUtility(self,other):
@@ -145,12 +144,13 @@ class Agent:
     for person in self.interacted:
       total_utility+=person[1]
     self.expected_utility = total_utility/len(self.interacted) #average of all seen utilities
-    self.expected_utility *= 1-(t+1)**-2
+    #self.expected_utility *= 1-(t+1)/10
     
   def CheckForIntersectingCircles(self,agent_list):
     for agent in agent_list:
-      if SqrDistance(self.location,agent.location) < (self.radius + agent.radius)**2:
-        self.interaction_list.append(agent)
+      if agent is not self:
+        if SqrDistance(self.location,agent.location) < (self.radius + agent.radius)**2:
+          self.interaction_list.append(agent)
   
 
 def AdjacentPoints((x,y)):
@@ -169,20 +169,28 @@ def SqrDistance((x,y),(a,b)):
   return (x-a)**2 + (y-b)**2
   
   
-def RemoveFromCouples(agent):
-  couples_copy = couples
-  for c in couples_copy:
-    if agent in c:
+# assuming monogamous relationships, there should be no more than 250 couples
+# i'm getting around 350 at the moment
+# i think there's some that get into polyamourous relationships
+# and probably a bunch more that just register every frame as a new couple
+
+
+
+
+def RemoveFromCouples(agent_a,agent_b):
+  for c in range(len(couples)):
+    if agent_a in couples[c] or agent_b in couples[c]:
       couples.pop(c)
+      break
   
 def CheckIfDate(agent_a,agent_b):
   if agent_a.CheckInterested(agent_b) and agent_b.CheckInterested(agent_a):
+    # free the agents from their previous romantic obligations
+    #RemoveFromCouples(agent_a,agent_b)
+    
     agent_a.EnterRelationship(agent_b)
     agent_b.EnterRelationship(agent_a)
     couples.append((agent_a,agent_b))
-    #technically just removing one should be sufficient, but redundancy is safer
-    RemoveFromCouples(agent_a)
-    RemoveFromCouples(agent_b)
   
 def GeneratePossibleInteractions(agents):
   for a in agents:
@@ -249,8 +257,9 @@ while(True): # i like to live dangerously
   
   screen.fill(white)
   
-  #print sim_time
-  #print "couples:" + str(len(couples))
+  print
+  print sim_time
+  print "couples:" + str(len(couples))
   print AverageExpectedUtility(agents)
   #print AverageInteractionRadius(agents)
   #print agents[0].expected_utility
@@ -267,6 +276,8 @@ while(True): # i like to live dangerously
       if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
         person.Interact(other)
         other.Interact(person)
+        if not person.taken and not other.taken:
+          CheckIfDate(person,other)
   
   #draw the couples linkages
   for c in couples:
