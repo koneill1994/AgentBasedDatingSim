@@ -47,7 +47,9 @@ from pygame import gfxdraw
 # simplified for first model
 gender_list=['m','f']
 
-field_dim = (1012,1012)
+height=1012
+width=1012
+field_dim = (height,width)
 
 max_radius = 30
 
@@ -88,6 +90,8 @@ class Agent:
     self.significant_other = None
     self.taken = False
     self.acquaintances=[]
+    self.interacted_counter=0
+    self.ID = agent_counter
   
   def GenerateIcon(self):
     icon_dim = (5,5)
@@ -125,11 +129,12 @@ class Agent:
     self.location = points[random.randrange(0,len(points))]
     
   def Interact(self,other):
+    self.interacted_counter+=1
+    e_u = self.EstimatedUtility(other)
+    self.UpdateExpectedUtility(e_u,sim_time)
     if other not in self.acquaintances:
-      e_u = self.EstimatedUtility(other)
       self.interacted.append((other,e_u))
       self.acquaintances.append(other)
-      self.UpdateExpectedUtility(sim_time)
 
   # if this is true for both, they will date
   def CheckInterested(self,other):
@@ -143,11 +148,9 @@ class Agent:
   def EstimatedUtility(self,other):
     return other.attractiveness # more complex formula later
   
-  def UpdateExpectedUtility(self,t):
-    total_utility=0
-    for person in self.interacted:
-      total_utility+=person[1]
-    self.expected_utility = total_utility/len(self.interacted) #average of all seen utilities
+  def UpdateExpectedUtility(self,new_utility,t):
+    # recompute the average
+    self.expected_utility = ((self.expected_utility*(self.interacted_counter-1))+new_utility)/self.interacted_counter
     #self.expected_utility *= 1-(t+1)/10
     
   def CheckForIntersectingCircles(self,agent_list):
@@ -177,7 +180,7 @@ def RemoveFromCouples(agent_a,agent_b):
   for c in range(len(couples)):
     if agent_a in couples[c] or agent_b in couples[c]:
       couples.pop(c)
-      break
+      break # to speed it up, it /shouldn't/ be necessary to keep looking
   
 def CheckIfDate(agent_a,agent_b):
   if agent_a.CheckInterested(agent_b) and agent_b.CheckInterested(agent_a):
@@ -210,7 +213,52 @@ def AverageInteractionRadius(agents):
     total+=a.interaction_radius
   return 1.0*total/len(agents)
 
+def render_text(text):
+  if pygame.font:
+    font = pygame.font.Font(None, 24)
+    text = font.render(text, 1, (0,0,0))
+    textpos = text.get_rect(right=width-20, top=20)
+    screen.blit(text, textpos)
 
+def WriteHeader(logfile):
+  c = ','
+  s = 'agentID' + c
+  s+='attractiveness'+c
+  s+='expected_utility'+c
+  s+='no_of_interactions'+c
+  s+='x_pos'+c
+  s+='y_pos'+c
+  s+='center_x'+c
+  s+='center_y'+c
+  s+='radius'+c
+  s+='interaction_radius'+c
+  s+='partner'
+  logfile.write(s+'\n')
+  
+def WriteLine(logfile,agent):
+  c = ','
+  s = str(agent.ID) + c
+  s+=str(agent.attractiveness)+c
+  s+=str(agent.expected_utility)+c
+  s+=str(agent.interacted_counter)+c
+  s+=str(agent.location[0])+c
+  s+=str(agent.location[1])+c
+  s+=str(agent.center[0])+c
+  s+=str(agent.center[1])+c
+  s+=str(agent.radius)+c
+  s+=str(agent.interaction_radius)+c
+  if agent.significant_other == None:
+    s+='NA'
+  else:
+    s+=str(agent.significant_other.ID)
+  logfile.write(s+'\n')
+
+def LogAgents(agents):  
+  f = open('./logs/logfile_' + str(sim_time) + '.csv','w')
+  WriteHeader(f)
+  for a in agents:
+    WriteLine(f,a)
+  f.close()
 
 ## start of main code here
 
@@ -220,12 +268,17 @@ agents=[]
 
 couples=[]
 
+agent_counter = 0
 for n in range(no_of_agents):
   agents.append(Agent())
+  agent_counter+=1
 
 GeneratePossibleInteractions(agents)
 
 sim_time = 0
+
+display_text=''
+text_timer=0
 
 # pygame initialization
 
@@ -251,10 +304,20 @@ if(render_pygame_window):
 
 while(True): # i like to live dangerously
   
-  print
-  print sim_time
-  print "couples:" + str(len(couples))
-  print AverageExpectedUtility(agents)
+  
+  keys = pygame.key.get_pressed()
+  for event in pygame.event.get():
+    if event.type == pygame.QUIT: sys.exit()
+    if keys[pygame.K_SPACE]: 
+      LogAgents(agents)
+      text_timer=20
+      display_text = 'logged'
+  
+  
+  print('\n')
+  print("epoch = " + str(sim_time))
+  print("couples:" + str(len(couples)))
+  print("average expected utility: "+str(AverageExpectedUtility(agents)))
   #print AverageInteractionRadius(agents)
   #print agents[0].expected_utility
   
@@ -276,9 +339,19 @@ while(True): # i like to live dangerously
         CheckIfDate(person,other)
         
   if(render_pygame_window):
+    render_text(display_text)
+    if text_timer==0: display_text=''
+    else: text_timer-=1
+    
     #draw the couples linkages
     for c in couples:
       pygame.draw.line(screen,black,c[0].location,c[1].location,1)
     pygame.display.flip()
     
+  
+  
+  
+  
+  
+  
   sim_time+=1
