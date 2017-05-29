@@ -60,6 +60,7 @@ sd_interaction_radius = 3
 mean_expected_utility = 5
 sd_expected_utility = 2
 
+marriage_wait_time_distribution = (50,10) # mean, sd
 
 render_pygame_window=True
 
@@ -92,6 +93,9 @@ class Agent:
     self.acquaintances=[]
     self.interacted_counter=0
     self.ID = agent_counter
+    self.marriage_wait_time=max(random.gauss(marriage_wait_time_distribution[0],marriage_wait_time_distribution[1]),0)
+    self.married = False
+    self.relationship_start_time = None
   
   def GenerateIcon(self):
     icon_dim = (5,5)
@@ -144,6 +148,7 @@ class Agent:
   def EnterRelationship(self,other):
     self.taken = True
     self.significant_other = other
+    self.relationship_start_time = sim_time
     
   def EstimatedUtility(self,other):
     return other.attractiveness # more complex formula later
@@ -159,6 +164,15 @@ class Agent:
         if SqrDistance(self.location,agent.location) < (self.radius + agent.radius)**2:
           self.interaction_list.append(agent)
   
+  def CheckIfReadyToMarry(self):
+    if sim_time-self.relationship_start_time > self.marriage_wait_time:
+      return True
+    else:
+      return False
+  
+  # this assumes they are already in a relationship with someone
+  def Marry(self):
+    self.married=True
 
 def AdjacentPoints((x,y)):
   return [(x+1,y),
@@ -332,11 +346,19 @@ while(True): # i like to live dangerously
     
   # check and see which agents are close enough to meet
   for person in agents:
-    for other in person.interaction_list:
-      if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
-        person.Interact(other)
-        other.Interact(person)
-        CheckIfDate(person,other)
+    if not person.married:
+      for other in person.interaction_list:
+        if not other.married:
+          if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
+            person.Interact(other)
+            other.Interact(person)
+            CheckIfDate(person,other)
+            
+  # check for marriages
+  for c in couples:
+    if c[0].CheckIfReadyToMarry() and c[1].CheckIfReadyToMarry():
+      c[0].Marry()
+      c[1].Marry()
         
   if(render_pygame_window):
     render_text(display_text)
@@ -345,7 +367,10 @@ while(True): # i like to live dangerously
     
     #draw the couples linkages
     for c in couples:
-      pygame.draw.line(screen,black,c[0].location,c[1].location,1)
+      if c[0].married and c[1].married:
+        pygame.draw.line(screen,black,c[0].location,c[1].location,3)
+      else:
+        pygame.draw.line(screen,black,c[0].location,c[1].location,1)
     pygame.display.flip()
     
   
