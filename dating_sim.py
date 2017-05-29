@@ -246,7 +246,8 @@ def WriteHeader(logfile):
   s+='center_y'+c
   s+='radius'+c
   s+='interaction_radius'+c
-  s+='partner'
+  s+='partner'+c
+  s+='married'
   logfile.write(s+'\n')
   
 def WriteLine(logfile,agent):
@@ -262,9 +263,10 @@ def WriteLine(logfile,agent):
   s+=str(agent.radius)+c
   s+=str(agent.interaction_radius)+c
   if agent.significant_other == None:
-    s+='NA'
+    s+='NA'+c
   else:
-    s+=str(agent.significant_other.ID)
+    s+=str(agent.significant_other.ID)+c
+  s+=str(agent.married)
   logfile.write(s+'\n')
 
 def LogAgents(agents):  
