@@ -98,7 +98,7 @@ class Agent:
     self.relationship_start_time = None
   
   def GenerateIcon(self):
-    icon_dim = (5,5)
+    icon_dim = (1,1)
     col=self.ColorFromAttractiveness()
     im=Image.new( 'RGB', icon_dim, col)
     PIL_bytes = im.tobytes("raw")
@@ -174,7 +174,12 @@ class Agent:
   def Marry(self):
     self.married=True
 
-def AdjacentPoints((x,y)):
+# trying to make it python3 compatible
+def UnpackTuple(m):
+  return (m[0],m[1])
+
+def AdjacentPoints(m):
+  (x,y) = UnpackTuple(m)
   return [(x+1,y),
           (x+1,y+1),
           (x+1,y-1),
@@ -186,7 +191,9 @@ def AdjacentPoints((x,y)):
           (x-1,y-1)]
   
   
-def SqrDistance((x,y),(a,b)):
+def SqrDistance(i,j):
+  (x,y)=UnpackTuple(i)
+  (a,b)=UnpackTuple(j)
   return (x-a)**2 + (y-b)**2
   
 
@@ -233,6 +240,17 @@ def render_text(text):
     text = font.render(text, 1, (0,0,0))
     textpos = text.get_rect(right=width-20, top=20)
     screen.blit(text, textpos)
+  else:
+    print("pygame.font error")
+    
+def render_time(epoch):
+  if pygame.font:
+    font = pygame.font.Font(None, 24)
+    text = font.render("sim_time: "+str(epoch), 1, (0,0,0))
+    textpos = text.get_rect(left=20, top=20)
+    screen.blit(text, textpos)
+  else:
+    print("pygame.font error")
 
 def WriteHeader(logfile):
   c = ','
@@ -276,6 +294,11 @@ def LogAgents(agents):
     WriteLine(f,a)
   f.close()
 
+def DrawInteractionRadius(agent):
+  col=agent.ColorFromAttractiveness()
+  gfxdraw.aacircle(screen, agent.location[0], agent.location[1], int(agent.interaction_radius), col)
+
+
 ## start of main code here
 
 no_of_agents = 500
@@ -295,6 +318,8 @@ sim_time = 0
 
 display_text=''
 text_timer=0
+
+pause=False
 
 # pygame initialization
 
@@ -324,45 +349,52 @@ while(True): # i like to live dangerously
   keys = pygame.key.get_pressed()
   for event in pygame.event.get():
     if event.type == pygame.QUIT: sys.exit()
-    if keys[pygame.K_SPACE]: 
+    if keys[pygame.K_ESCAPE]: sys.exit()
+    if keys[pygame.K_l]: 
       LogAgents(agents)
       text_timer=20
       display_text = 'logged'
-  
-  
-  print('\n')
-  print("epoch = " + str(sim_time))
-  print("couples:" + str(len(couples)))
-  print("average expected utility: "+str(AverageExpectedUtility(agents)))
-  #print AverageInteractionRadius(agents)
-  #print agents[0].expected_utility
+    if event.type == pygame.KEYDOWN:
+      if event.key == pygame.K_SPACE:
+        pause = not pause # toggle
+        if pause: print("\n\nPAUSED\n\n")
   
   if(render_pygame_window):
     screen.fill(white)
   
-  for person in agents:
-    person.Move()
-    if(render_pygame_window):
-      screen.blit(person.icon,person.location)
+  if not pause:
     
+    sim_time+=1
+    # runs simulation
+    print('\n')
+    print("epoch = " + str(sim_time))
+    print("couples:" + str(len(couples)))
+    print("average expected utility: "+str(AverageExpectedUtility(agents)))
     
-  # check and see which agents are close enough to meet
-  for person in agents:
-    if not person.married:
-      for other in person.interaction_list:
-        if not other.married:
-          if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
-            person.Interact(other)
-            other.Interact(person)
-            CheckIfDate(person,other)
+    for person in agents:
+      person.Move()
+      if(render_pygame_window):
+        screen.blit(person.icon,person.location)
+      
+    # check and see which agents are close enough to meet
+    for person in agents:
+      if not person.married:
+        for other in person.interaction_list:
+          if not other.married:
+            if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
+              person.Interact(other)
+              other.Interact(person)
+              CheckIfDate(person,other)
             
-  # check for marriages
-  for c in couples:
-    if c[0].CheckIfReadyToMarry() and c[1].CheckIfReadyToMarry():
-      c[0].Marry()
-      c[1].Marry()
+    # check for marriages
+    for c in couples:
+      if c[0].CheckIfReadyToMarry() and c[1].CheckIfReadyToMarry():
+        c[0].Marry()
+        c[1].Marry()
+    # end runs simulation
         
   if(render_pygame_window):
+    render_time(sim_time)
     render_text(display_text)
     if text_timer==0: display_text=''
     else: text_timer-=1
@@ -373,6 +405,10 @@ while(True): # i like to live dangerously
         pygame.draw.line(screen,black,c[0].location,c[1].location,3)
       else:
         pygame.draw.line(screen,black,c[0].location,c[1].location,1)
+        
+    for a in agents:
+      DrawInteractionRadius(a)
+      
     pygame.display.flip()
     
   
@@ -381,4 +417,3 @@ while(True): # i like to live dangerously
   
   
   
-  sim_time+=1
