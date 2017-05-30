@@ -288,7 +288,7 @@ def WriteLine(logfile,agent):
     s+=str(agent.significant_other.ID)+c
   s+=str(agent.married)+c
   s+=str(agent.marriage_wait_time)+c
-  s+=str(relationship_start_time)
+  s+=str(agent.relationship_start_time)
   logfile.write(s+'\n')
 
 def LogAgents(agents):  
