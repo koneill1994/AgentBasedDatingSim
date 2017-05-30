@@ -265,7 +265,9 @@ def WriteHeader(logfile):
   s+='radius'+c
   s+='interaction_radius'+c
   s+='partner'+c
-  s+='married'
+  s+='married'+c
+  s+='time_til_marriage'+c
+  s+='time_entered_relationship'
   logfile.write(s+'\n')
   
 def WriteLine(logfile,agent):
@@ -284,7 +286,9 @@ def WriteLine(logfile,agent):
     s+='NA'+c
   else:
     s+=str(agent.significant_other.ID)+c
-  s+=str(agent.married)
+  s+=str(agent.married)+c
+  s+=str(agent.marriage_wait_time)+c
+  s+=str(relationship_start_time)
   logfile.write(s+'\n')
 
 def LogAgents(agents):  
