@@ -60,7 +60,7 @@ sd_interaction_radius = 3
 mean_expected_utility = 5
 sd_expected_utility = 2
 
-marriage_wait_time_distribution = (50,10) # mean, sd
+marriage_wait_time_distribution = (500,10) # mean, sd
 
 render_pygame_window=True
 
@@ -96,10 +96,11 @@ class Agent:
     self.marriage_wait_time=max(random.gauss(marriage_wait_time_distribution[0],marriage_wait_time_distribution[1]),0)
     self.married = False
     self.relationship_start_time = None
-    self.follow_spouse = random.random() # between 0 and 1
+    self.follow_spouse = random.random()/5.0 # between 0 and 1
+    self.relationship_counter = 0
   
   def GenerateIcon(self):
-    icon_dim = (1,1)
+    icon_dim = (3,3)
     col=self.ColorFromAttractiveness()
     im=Image.new( 'RGB', icon_dim, col)
     PIL_bytes = im.tobytes("raw")
@@ -156,6 +157,7 @@ class Agent:
     self.taken = True
     self.significant_other = other
     self.relationship_start_time = sim_time
+    self.relationship_counter+=1
     
   def EstimatedUtility(self,other):
     return other.attractiveness # more complex formula later
@@ -298,7 +300,8 @@ def WriteHeader(logfile):
   s+='partner'+c
   s+='married'+c
   s+='time_til_marriage'+c
-  s+='time_entered_relationship'
+  s+='time_entered_relationship'+c
+  s+='relationship_counter'
   logfile.write(s+'\n')
   
 def WriteLine(logfile,agent):
@@ -319,7 +322,8 @@ def WriteLine(logfile,agent):
     s+=str(agent.significant_other.ID)+c
   s+=str(agent.married)+c
   s+=str(agent.marriage_wait_time)+c
-  s+=str(agent.relationship_start_time)
+  s+=str(agent.relationship_start_time)+c
+  s+=str(agent.relationship_counter)
   logfile.write(s+'\n')
 
 def LogAgents(agents): 
@@ -338,7 +342,7 @@ def DrawInteractionRadius(agent):
 
 ## start of main code here
 
-no_of_agents = 500
+no_of_agents = 1000
 
 agents=[]
 
@@ -442,10 +446,10 @@ while(True): # i like to live dangerously
         pygame.draw.line(screen,black,c[0].location,c[1].location,3)
       else:
         pygame.draw.line(screen,black,c[0].location,c[1].location,1)
-        
+    '''    
     for a in agents:
       DrawInteractionRadius(a)
-      
+      '''
     pygame.display.flip()
     
   
