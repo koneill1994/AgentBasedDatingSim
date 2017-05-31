@@ -96,6 +96,7 @@ class Agent:
     self.marriage_wait_time=max(random.gauss(marriage_wait_time_distribution[0],marriage_wait_time_distribution[1]),0)
     self.married = False
     self.relationship_start_time = None
+    self.follow_spouse = random.random() # between 0 and 1
   
   def GenerateIcon(self):
     icon_dim = (1,1)
@@ -123,14 +124,20 @@ class Agent:
     return (r,g,b)
     
   def Move(self):
-    points = AdjacentPoints(self.location)
-    points_new = []
-    # probability_distribution = GenerateProbabilityDistribution(points) # save for later
-    # make sure they don't leave their radius
-    for p in points:
-      if SqrDistance(self.center,p) < max_radius**2:
-        points_new.append(p)
-    self.location = points[random.randrange(0,len(points))]
+    if (random.random() < self.follow_spouse) and not(self.significant_other == None):
+      p = GetAdjacentPointFromDestination(self.location,self.significant_other.location)
+      if CheckWithinBounds(p,field_dim):
+        self.location = p
+    else:
+      points = AdjacentPoints(self.location)
+      points_new = []
+      # probability_distribution = GenerateProbabilityDistribution(points) # save for later
+      # make sure they don't leave their radius
+      for p in points:
+        if CheckWithinBounds(p,field_dim):
+          points_new.append(p)
+      self.location = points[random.randrange(0,len(points))]
+
     
   def Interact(self,other):
     self.interacted_counter+=1
@@ -190,7 +197,31 @@ def AdjacentPoints(m):
           (x-1,y+1),
           (x-1,y-1)]
   
+  #basically get the closest integer point towards a location
+  # fix this function
+def GetAdjacentPointFromDestination(l,d):
+  (x,y) = UnpackTuple(l)
+  (a,b) = UnpackTuple(d)
+  (u,v) = NormalizeVector((x-a,y-b))
+  return (u+x,v+y)
   
+def NormalizeVector(w):
+  (u,v)=UnpackTuple(w)
+  if u==0 and v ==0:
+    return (0,0)
+  dist=math.sqrt(SqrDistance((u,v),(0.0,0.0)))
+  return (-int(round(u/dist)),-int(round(v/dist)))
+  
+def CheckWithinBounds(l,b):
+  (x,y) = UnpackTuple(l)
+  (u,v) = UnpackTuple(b)
+  if x<0 or x>u:
+    return False
+  if y<0 or y>v:
+    return False
+  return True
+  
+
 def SqrDistance(i,j):
   (x,y)=UnpackTuple(i)
   (a,b)=UnpackTuple(j)
@@ -291,7 +322,9 @@ def WriteLine(logfile,agent):
   s+=str(agent.relationship_start_time)
   logfile.write(s+'\n')
 
-def LogAgents(agents):  
+def LogAgents(agents): 
+  if not os.path.exists('./logs/'):
+    os.makedirs('./logs/')
   f = open('./logs/logfile_' + str(sim_time) + '.csv','w')
   WriteHeader(f)
   for a in agents:
