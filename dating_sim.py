@@ -98,6 +98,7 @@ class Agent:
     self.relationship_start_time = None
     self.follow_spouse = random.random()/5.0 # between 0 and 1
     self.relationship_counter = 0
+    self.position_in_couples_list=None # to speed up things, keep a reference to the position
   
   def GenerateIcon(self):
     icon_dim = (3,3)
@@ -155,6 +156,7 @@ class Agent:
   
   def EnterRelationship(self,other):
     self.taken = True
+    self.position_in_couples_list = len(couples)
     self.significant_other = other
     self.relationship_start_time = sim_time
     self.relationship_counter+=1
@@ -229,12 +231,21 @@ def SqrDistance(i,j):
   (a,b)=UnpackTuple(j)
   return (x-a)**2 + (y-b)**2
   
-
+# need to remove each one individually
 def RemoveFromCouples(agent_a,agent_b):
+  '''
+  if agent_a.position_in_couples_list != agent_b.position_in_couples_list:
+    print("\n\n\n\n error agents in different couples \n\n\n\n")
+    time.sleep(30)
+  couples.pop(agent_a.position_in_couples_list)
+  agent_a.position_in_couples_list=None
+  agent_b.position_in_couples_list=None
+  '''
   for c in range(len(couples)):
     if agent_a in couples[c] or agent_b in couples[c]:
       couples.pop(c)
       break # to speed it up, it /shouldn't/ be necessary to keep looking
+      
   
 def CheckIfDate(agent_a,agent_b):
   if agent_a.CheckInterested(agent_b) and agent_b.CheckInterested(agent_a):
@@ -410,6 +421,7 @@ while(True): # i like to live dangerously
     print('\n')
     print("epoch = " + str(sim_time))
     print("couples:" + str(len(couples)))
+    print("max possible couples" + str(no_of_agents/2))
     print("average expected utility: "+str(AverageExpectedUtility(agents)))
     
     for person in agents:
@@ -423,9 +435,10 @@ while(True): # i like to live dangerously
         for other in person.interaction_list:
           if not other.married:
             if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
+
               person.Interact(other)
               other.Interact(person)
-              CheckIfDate(person,other)
+              CheckIfDate(person,other)  # this is what is slowing it down
             
     # check for marriages
     for c in couples:
