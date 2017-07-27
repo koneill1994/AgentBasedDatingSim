@@ -52,6 +52,8 @@ height=1012
 width=1012
 field_dim = (height,width)
 
+field_dim=(30,30)  #tmp
+
 max_radius = 30
 
 # i suppose would be indicative of introversion?
@@ -157,7 +159,7 @@ class Agent:
   
   def EnterRelationship(self,other):
     self.taken = True
-    self.position_in_couples_list = len(couples)
+    ###self.position_in_couples_list = len(couples)
     self.significant_other = other
     self.relationship_start_time = sim_time
     self.relationship_counter+=1
@@ -234,18 +236,14 @@ def SqrDistance(i,j):
   
 # need to remove each one individually
 def RemoveFromCouples(agent_a,agent_b):
-  '''
-  if agent_a.position_in_couples_list != agent_b.position_in_couples_list:
-    print("\n\n\n\n error agents in different couples \n\n\n\n")
-    time.sleep(30)
-  couples.pop(agent_a.position_in_couples_list)
+  if agent_a.position_in_couples_list != None and not agent_a.position_in_couples_list.removed:
+    couples.remove(agent_a.position_in_couples_list)
+  if agent_b.position_in_couples_list != None and not agent_b.position_in_couples_list.removed:
+    couples.remove(agent_b.position_in_couples_list)
+  
   agent_a.position_in_couples_list=None
   agent_b.position_in_couples_list=None
-  '''
-  for c in range(len(couples)):
-    if agent_a in couples[c] or agent_b in couples[c]:
-      couples.pop(c)
-      break # to speed it up, it /shouldn't/ be necessary to keep looking
+  
       
   
 def CheckIfDate(agent_a,agent_b):
@@ -255,7 +253,9 @@ def CheckIfDate(agent_a,agent_b):
     
     agent_a.EnterRelationship(agent_b)
     agent_b.EnterRelationship(agent_a)
-    couples.append((agent_a,agent_b))
+    m = couples.add((agent_a,agent_b))
+    agent_a.position_in_couples_list=m
+    agent_b.position_in_couples_list=m
   
 def GeneratePossibleInteractions(agents):
   for a in agents:
@@ -351,14 +351,35 @@ def DrawInteractionRadius(agent):
   col=agent.ColorFromAttractiveness()
   gfxdraw.aacircle(screen, agent.location[0], agent.location[1], int(agent.interaction_radius), col)
 
+def wsp(item,length):
+  return WhitespacePad(item, length)
+
+def WhitespacePad(item, length):
+  l = len(str(item))
+  pad=length-l
+  if pad<0:
+    return 'e'*length
+  else:
+    return ' '*pad + str(item)
+
+def PrintCouples(couples):
+  if len(couples)<1:
+    return "empty"
+  i=0
+  for p in couples:
+    print(wsp(i,3)+": "+wsp(p.val[0].ID,4) + ", " + wsp(p.val[1].ID,4))
+  print "\n\n\n\n\n\n\n"
+
 
 ## start of main code here
 
-no_of_agents = 1000
+no_of_agents=1000
+
+no_of_agents = 64 # tmp
 
 agents=[]
 
-couples=[]
+couples=ll.LinkedList()
 
 agent_counter = 0
 for n in range(no_of_agents):
@@ -398,6 +419,7 @@ if(render_pygame_window):
 
 while(True): # i like to live dangerously
   
+  if sim_time>1: sys.exit()
   
   keys = pygame.key.get_pressed()
   for event in pygame.event.get():
@@ -424,6 +446,7 @@ while(True): # i like to live dangerously
     print("couples:" + str(len(couples)))
     print("max possible couples" + str(no_of_agents/2))
     print("average expected utility: "+str(AverageExpectedUtility(agents)))
+    PrintCouples(couples)
     
     for person in agents:
       person.Move()
@@ -436,17 +459,21 @@ while(True): # i like to live dangerously
         for other in person.interaction_list:
           if not other.married:
             if SqrDistance(person.location,other.location) < (person.interaction_radius + other.interaction_radius)**2:
-
+              
+              #print person.ID
+              #print "    "+str(other.ID)
+              
               person.Interact(other)
               other.Interact(person)
-              CheckIfDate(person,other)  # this is what is slowing it down
-            
+              CheckIfDate(person,other)  
+              
     # check for marriages
     for c in couples:
-      if c[0].CheckIfReadyToMarry() and c[1].CheckIfReadyToMarry():
-        c[0].Marry()
-        c[1].Marry()
+      if c.val[0].CheckIfReadyToMarry() and c.val[1].CheckIfReadyToMarry():
+        c.val[0].Marry()
+        c.val[1].Marry()
     # end runs simulation
+        
         
   if(render_pygame_window):
     render_time(sim_time)
@@ -456,10 +483,10 @@ while(True): # i like to live dangerously
     
     #draw the couples linkages
     for c in couples:
-      if c[0].married and c[1].married:
-        pygame.draw.line(screen,black,c[0].location,c[1].location,3)
+      if c.val[0].married and c.val[1].married:
+        pygame.draw.line(screen,black,c.val[0].location,c.val[1].location,3)
       else:
-        pygame.draw.line(screen,black,c[0].location,c[1].location,1)
+        pygame.draw.line(screen,black,c.val[0].location,c.val[1].location,1)
     '''    
     for a in agents:
       DrawInteractionRadius(a)
