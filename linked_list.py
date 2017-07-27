@@ -16,6 +16,14 @@ class LinkedList:
         
   def __len__(self):
     return self.size
+    
+  def __contains__(self,item):
+    contains=False
+    for x in self:
+      if x.val==item:
+        contains=True
+    return contains
+    
   
   def __iter__(self):
     self.it=self.first
@@ -46,15 +54,16 @@ class LinkedList:
       el.prev=self.last
       self.last.nex=el
       self.last=el
+    #print(str(self.size)+'++')
     self.size+=1
     return el
     
   def remove(self,LLE):
     if(LLE.container == self):
-      print "     a" + str(self.size)
+      #print "     a" + str(self.size)
       self.size-=1
-      print "     b" + str(self.size)
-      LLE.remove()
+      #print "     b" + str(self.size)
+      #LLE.remove()
     if self.size == 0:
       self.first=LinkedListElement(None,None,None,self)
       self.last=self.first
@@ -80,3 +89,11 @@ class LinkedListElement:
     
   def __repr__(self):
     return str(self.val)
+
+'''
+m=LinkedList([1,2,3,4,5])
+if 1 in m:
+  print '!!!'
+else:
+  print '000'
+'''

@@ -52,7 +52,7 @@ height=1012
 width=1012
 field_dim = (height,width)
 
-field_dim=(30,30)  #tmp
+#field_dim=(30,30)  #tmp
 
 max_radius = 30
 
@@ -236,10 +236,17 @@ def SqrDistance(i,j):
   
 # need to remove each one individually
 def RemoveFromCouples(agent_a,agent_b):
-  if agent_a.position_in_couples_list != None and not agent_a.position_in_couples_list.removed:
+  if (agent_a.position_in_couples_list != None) and (not agent_a.position_in_couples_list.removed):
     couples.remove(agent_a.position_in_couples_list)
-  if agent_b.position_in_couples_list != None and not agent_b.position_in_couples_list.removed:
+    agent_a.significant_other.position_in_couples_list=None
+    agent_a.significant_other.significant_other=None
+    agent_a.significant_other=None
+    
+  if (agent_b.position_in_couples_list != None) and (not agent_b.position_in_couples_list.removed):
     couples.remove(agent_b.position_in_couples_list)
+    agent_b.significant_other.position_in_couples_list=None
+    agent_b.significant_other.significant_other=None
+    agent_b.significant_other=None
   
   agent_a.position_in_couples_list=None
   agent_b.position_in_couples_list=None
@@ -368,6 +375,7 @@ def PrintCouples(couples):
   i=0
   for p in couples:
     print(wsp(i,3)+": "+wsp(p.val[0].ID,4) + ", " + wsp(p.val[1].ID,4))
+    i+=1
   print "\n\n\n\n\n\n\n"
 
 
@@ -375,7 +383,7 @@ def PrintCouples(couples):
 
 no_of_agents=1000
 
-no_of_agents = 64 # tmp
+#no_of_agents = 64 # tmp
 
 agents=[]
 
@@ -419,7 +427,6 @@ if(render_pygame_window):
 
 while(True): # i like to live dangerously
   
-  if sim_time>1: sys.exit()
   
   keys = pygame.key.get_pressed()
   for event in pygame.event.get():
@@ -447,6 +454,9 @@ while(True): # i like to live dangerously
     print("max possible couples" + str(no_of_agents/2))
     print("average expected utility: "+str(AverageExpectedUtility(agents)))
     PrintCouples(couples)
+    
+    
+    if sim_time>2: sys.exit()
     
     for person in agents:
       person.Move()
