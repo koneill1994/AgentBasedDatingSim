@@ -9,19 +9,30 @@ class LinkedList:
     self.size=0
     self.first=LinkedListElement(None,None,None)
     self.last=self.first
+    self.it=self.first
     if l!=None:
       for x in l:
         self.add(x)
   
   def __iter__(self):
+    self.it=self.first
     return self
   
   def next(self,LLE=None):
     if LLE==None:
-      LLE=self.first
-    if LLE.nex == None or LLE == None:
+      LLE=self.it
+    if LLE == None:
       raise StopIteration()
-    return LLE.nex
+    self.it=LLE.nex
+    return LLE
+    
+  def __next__(self,LLE=None):
+    if LLE==None:
+      LLE=self.it
+    if LLE == None:
+      raise StopIteration()
+    self.it=LLE.nex
+    return LLE
     
   def add(self,obj):
     el=LinkedListElement(None,None,obj)
@@ -52,12 +63,3 @@ class LinkedListElement:
     
   def __repr__(self):
     return str(self.val)
-
-
-
-m = LinkedList([1,2,5,63,32,1])
-print m.size
-'''
-for x in m:
-  print x
-'''

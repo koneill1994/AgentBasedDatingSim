@@ -7,6 +7,7 @@ import numpy
 import sys, os, pygame, PIL, time
 from PIL import Image
 from pygame import gfxdraw
+import linked_list as ll
 
 
 # agent properties
